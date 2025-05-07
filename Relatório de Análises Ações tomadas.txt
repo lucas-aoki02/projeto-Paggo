@@ -1,0 +1,60 @@
+Relatório de Análises Ações tomadas para resolver o projeto
+
+Este relatório detalha os esforços empreendidos e as diversas tentativas realizadas para solucionar o problema de conexão da API com o banco de dados PostgreSQL no contexto do projeto, utilizando Docker Compose para orquestração dos serviços.
+
+Inicialmente, tentou-se criar os bancos de dados automaticamente via Docker. A automação da criação dos bancos de dados foi inviabilizada por problemas persistentes de conexão com a porta dos serviços de banco de dados dentro do ambiente Docker. Posteriormente, o projeto mudou para a criação manual dos bancos para focar no desenvolvimento da API e ETL.
+
+O principal obstáculo encontrado foi a falha da aplicação API em estabelecer conexão com o banco de dados fonte_db, resultando em erros de "Connection refused" e, consequentemente, em erros 500 ao tentar acessar a rota /data/.
+
+Tentativas e Análise:
+
+Verificação da Configuração do docker-compose.yml:
+
+Ação: O arquivo docker-compose.yml foi minuciosamente revisado para garantir que as variáveis de ambiente (DATABASE_URL e TARGET_DATABASE_URL) estivessem corretamente definidas para o serviço api, utilizando os nomes dos serviços (fonte_db e alvo_db) como hostnames.
+Análise: A configuração inicial parecia correta, sugerindo que o problema não residia na definição das URLs no Docker Compose.
+Inspeção do Código da API (main.py e crud.py):
+
+Ação: Os arquivos main.py e crud.py foram examinados em busca de lógica de conexão direta com o banco de dados utilizando localhost ou 127.0.0.1.
+Análise: Não foram encontradas referências explícitas a esses endereços nesses arquivos, indicando que a conexão deveria ser gerenciada através das configurações do SQLAlchemy.
+Análise do Módulo de Configurações (config.py):
+
+Ação: O arquivo config.py foi identificado como a fonte das URLs do banco de dados para a aplicação. Inicialmente, ele estava configurado para ler variáveis de ambiente detalhadas (DATABASE_HOSTNAME_FONTE, etc.).
+Análise: Foi constatado que essas variáveis detalhadas não estavam definidas no docker-compose.yml. A solução implementada foi modificar o config.py para ler diretamente as variáveis de ambiente DATABASE_URL e TARGET_DATABASE_URL definidas no Docker Compose.
+Reconstrução da Imagem Docker da API:
+
+Ação: Após a modificação do config.py, a imagem Docker do serviço api foi reconstruída utilizando o comando docker-compose build --no-cache api para garantir que as alterações no código fossem incorporadas à nova imagem.
+Reinicialização da Stack Docker Compose:
+
+Ação: Toda a stack Docker Compose foi reiniciada com os comandos docker-compose down e docker-compose up -d para garantir que os containers fossem recriados utilizando as imagens mais recentes.
+Verificação dos Logs da API:
+
+Ação: Os logs do container api foram continuamente monitorados utilizando o comando docker logs -f $(docker ps --filter name=api --format "{{.Names}}") em busca de mensagens de erro e para verificar se a aplicação estava tentando se conectar ao localhost.
+Análise: Apesar das correções, o erro de conexão com localhost persistiu.
+Adição de Logs Explícitos no Código:
+
+Ação: Foram adicionadas linhas de print() nos arquivos database.py e main.py para imprimir o valor da DATABASE_URL_FONTE no momento da inicialização da aplicação.
+Análise: A ausência dessas linhas nos logs sugeriu um possível problema na importação dos módulos ou na ordem de execução do código.
+Busca por Configurações de Banco de Dados Fixas:
+
+Ação: Foram utilizados comandos grep (e seus equivalentes no PowerShell) para buscar em todo o código dentro do diretório backend/api por ocorrências de "localhost:5432", "127.0.0.1:5432" e "psycopg2.connect" com esses endereços.
+Análise: Nenhuma ocorrência dessas strings foi encontrada, indicando que a configuração local fixa não estava explicitamente presente no código examinado.
+Verificação da Estrutura de Pastas no Container:
+
+Ação: Foi sugerido entrar no container da API para verificar a estrutura de pastas e confirmar a localização do arquivo crud.py, após um erro de importação relatado.
+Possíveis Formas de Resolver (Considerando o Ponto Atual):
+
+Investigação Aprofundada da Inicialização e Importação de Módulos: O erro "Import 'backend.crud' could not be resolved" é crítico. É necessário garantir que o ambiente dentro do container da API esteja corretamente configurado para que o Python possa encontrar os módulos da sua aplicação. Isso pode envolver verificar as variáveis de ambiente PYTHONPATH dentro do container ou a forma como o Docker está resolvendo os caminhos.
+
+Revisão do Dockerfile: Embora o Dockerfile pareça simples, pode haver alguma sutileza na forma como o ambiente é configurado ou alguma instrução que esteja afetando a resolução de caminhos dentro do container.
+
+Problemas com o Ambiente Virtual (se utilizado): Se um ambiente virtual Python está sendo usado no processo de build da imagem, é crucial garantir que ele esteja sendo ativado corretamente dentro do container e que os caminhos estejam configurados para usar os pacotes instalados nesse ambiente.
+
+Inspeção da Rede Docker: Embora menos provável em um cenário Docker Compose padrão, pode haver alguma questão na rede interna do Docker que esteja impedindo a resolução do nome fonte_db para o endereço IP do container do banco de dados. Isso poderia levar a uma tentativa de fallback para localhost.
+
+Problemas com a Biblioteca psycopg2 ou SQLAlchemy: Em cenários raros, pode haver problemas específicos com a instalação ou configuração dessas bibliotecas dentro do container. Tentar reinstalá-las explicitamente no Dockerfile pode ser uma medida.
+
+Conclusão:
+
+Apesar de diversas tentativas e correções na configuração do Docker Compose e no código da aplicação, o problema de conexão com o banco de dados persiste. O recente erro de importação de módulos sugere que pode haver um problema fundamental com a forma como o ambiente Python está configurado dentro do container da API. Uma investigação mais aprofundada na estrutura de pastas do container e na configuração do ambiente Python é necessária para identificar a causa raiz e implementar uma solução eficaz.
+
+Agradeço a atenção e me coloco à disposição para fornecer mais detalhes e continuar colaborando na busca por uma solução.

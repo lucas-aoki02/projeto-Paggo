@@ -1,0 +1,46 @@
+services:
+  fonte_db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: fonte_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - fonte_db_data:/var/lib/postgresql/data/
+
+  alvo_db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: alvo_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - alvo_db_data:/var/lib/postgresql/data/
+
+  api:
+    build: ./backend/api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgres://user:password@fonte_db:5432/fonte_db
+      TARGET_DATABASE_URL: postgres://user:password@alvo_db:5432/alvo_db
+    depends_on:
+      - fonte_db
+      - alvo_db
+
+  etl:
+    build: ./etl
+    environment:
+      API_URL: http://api:8000/data/
+      TARGET_DATABASE_URL: postgres://user:password@alvo_db:5432/alvo_db
+    depends_on:
+      - api
+      - alvo_db
+
+volumes:
+  fonte_db_data:
+  alvo_db_data:

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.coverage
+.tox
+
+# Docker
+.dockerenv
+docker-compose.override.yml
+docker-compose.prod.yml
+
+# Virtual Environment (se estiver usando)
+venv/
+.venv/
+
+# Logs
+*.log
+
+# IDE Specific
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+
+# OS Specific
+.DS_Store
+Thumbs.db
+
+# Secrets and Configuration (important!)
+.env
+*.ini # Outros arquivos de configuração sensíveis
+
+# Data files (se forem grandes e não essenciais ao código)
+*.csv
+*.json
+*.sqlite

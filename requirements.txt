@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+sqlalchemy==2.0.40
+httpx
+pandas
+psycopg2-binary
