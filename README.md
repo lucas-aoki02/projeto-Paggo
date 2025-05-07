@@ -1,3 +1,5 @@
+Por favor, primeiro leia o arquivo Relatório de Análise e ações toamdas.txt
+
 Este README fornece os comandos básicos para executar o projeto utilizando Docker Compose.
 
 ## Pré-requisitos
